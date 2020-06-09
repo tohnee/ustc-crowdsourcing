@@ -86,7 +86,7 @@ func (t *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 * func (t *Chaincode) BonusPayment(stub shim.ChaincodeStubInterface, args []string) 
 
-  BonusPayment用于奖励支付，链码调用者必须为任务的发布者，args参数为任务名，当任务对应的分配结果存在时，系统会进行积分的转移，否则返回错误。
+  BonusPayment用于奖励支付，链码调用者必须为任务的发布者，args参数为任务名和满意度，当任务对应的分配结果存在时，系统会进行积分的转移，当发布者不满足工人的工作时，工人的信誉度会下降，得到的报酬也会降低，否则返回错误。
 
 ##### 链码函数（数据查询）
 
