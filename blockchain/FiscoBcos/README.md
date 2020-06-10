@@ -144,8 +144,17 @@
 
 #### 合约使用指南
 ***
+##### 前提条件
+
+| 环境         | 版本   |
+| ------------ | ------ |
+| FISCO BCOS   | 2.3.0  |
+| WeBASE-Front | v1.3.0 |
+| Solidity     | 0.4.4  |
+
 ##### 合约部署
-在Webase-Front上部署时所有合约放在同一目录下，管理者只需部署Admin.sol，然后调用Admin合约中_controllerAddress，可得到CrowdsourceContorller合约的地址，即可调用相关方法。
+
+在WeBASE-Front上部署时所有合约放在同一目录下，管理者只需部署Admin.sol，然后调用Admin合约中_controllerAddress，可得到CrowdsourceContorller合约的地址，即可调用相关方法。
 <center class="half">
 <img src="images\1.png" alt="image-2" style="zoom: 40%;" /> <img src="images\2.png" alt="image-2" style="zoom:50%;" />
 </center>
