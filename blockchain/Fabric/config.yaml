@@ -1,0 +1,128 @@
+name: "compete-service-network"
+version: 1.0.0
+client:
+  organization: org1
+  logging:
+    level: info
+  cryptoconfig:
+    path: ${GOPATH}/src/github.com/chainCompete/compete-service/fixtures/crypto-config
+  credentialStore:
+    path: /tmp/compete-service-store
+    cryptoStore:
+      path: /tmp/compete-service-msp
+  BCCSP:
+    security:
+     enabled: true
+     default:
+      provider: "SW"
+     hashAlgorithm: "SHA2"
+     softVerify: true
+     level: 256
+
+  tlsCerts:
+    systemCertPool: false
+    client:
+      keyfile:
+      certfile:
+channels:
+  datatransaction:
+    peers:
+      peer0.org1.transaction:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer1.org1.transaction:
+    policies:  
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 1
+        retryOpts:
+          attempts: 5
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+organizations:
+  org1:
+    mspid: Org1MSP
+    cryptoPath: peerOrganizations/org1.transaction/users/{userName}@org1.transaction/msp
+    peers:
+      - peer0.org1.transaction
+      - peer1.org1.transaction
+    certificateAuthorities:
+      - ca.org1.transaction
+orderers:
+  orderer.transaction:
+    url: localhost:7050
+    grpcOptions:
+      ssl-target-name-override: orderer.transaction
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/chainCompete/compete-service/fixtures/crypto-config/ordererOrganizations/transaction/tlsca/tlsca.transaction-cert.pem
+peers:
+  peer0.org1.transaction:
+    url: localhost:7051
+    eventUrl: localhost:7053
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.transaction
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/chainCompete/compete-service/fixtures/crypto-config/peerOrganizations/org1.transaction/tlsca/tlsca.org1.transaction-cert.pem
+  peer1.org1.transaction:
+    url: localhost:8051
+    eventUrl: localhost:8053
+    grpcOptions:
+      ssl-target-name-override: peer1.org1.transaction
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/chainCompete/compete-service/fixtures/crypto-config/peerOrganizations/org1.transaction/tlsca/tlsca.org1.transaction-cert.pem
+certificateAuthorities:
+  ca.org1.transaction:
+    url: http://localhost:7054
+    httpOptions:
+      verify: false
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.org1.transaction
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/chainCompete/compete-service/fixtures/crypto-config/peerOrganizations/org1.transaction/ca/ca.org1.transaction-cert.pem
+
+entityMatchers:
+  peer:
+    - pattern: (\w*)peer0.org1.transaction(\w*)
+      urlSubstitutionExp: localhost:7051
+      eventUrlSubstitutionExp: localhost:7053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.transaction
+      mappedHost: peer0.org1.transaction
+
+    - pattern: (\w*)peer1.org1.transaction(\w*)
+      urlSubstitutionExp: localhost:8051
+      eventUrlSubstitutionExp: localhost:8053
+      sslTargetOverrideUrlSubstitutionExp: peer1.org1.transaction
+      mappedHost: peer1.org1.transaction
+
+  orderer:
+    - pattern: (\w*)orderer.transaction(\w*)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.transaction
+      mappedHost: orderer.transaction
+
+  certificateAuthorities:
+    - pattern: (\w*)ca.org1.transaction(\w*)
+      urlSubstitutionExp: http://localhost:7054
+      mappedHost: ca.org1.transaction

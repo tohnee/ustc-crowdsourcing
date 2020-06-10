@@ -1,0 +1,43 @@
+Profiles:
+    DataTransaction:
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Org1
+        Consortium: SampleConsortium
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                    - *OrdererOrg
+                    - *Org1
+Organizations:
+    - &OrdererOrg
+        Name: Orderer
+        ID: OrdererMSP
+        AdminPrincipal: Role.ADMIN
+        MSPDir: crypto-config/ordererOrganizations/transaction/msp
+    - &Org1
+        Name: Org1
+        ID: Org1MSP
+        AdminPrincipal: Role.ADMIN
+        MSPDir: crypto-config/peerOrganizations/org1.transaction/msp
+        AnchorPeers:
+            - Host: peer0.org1.transaction
+              Port: 7051
+Orderer: &OrdererDefaults
+    OrdererType: solo
+    Addresses:
+        - orderer.transaction:7050
+    BatchTimeout: 2s
+    BatchSize:    
+        MaxMessageCount: 10       
+        AbsoluteMaxBytes: 98 MB     
+        PreferredMaxBytes: 512 KB
+    MaxChannels: 0
+    Organizations:
+Application: &ApplicationDefaults
+    Organizations:

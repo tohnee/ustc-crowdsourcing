@@ -27,6 +27,44 @@
 * chaincode/chaincodeinvoke.go 与数据写入相关的所有链码函数
 * chaincode/task.go、chaincode/user.go、chaincode/offer.go、chaincode/result.go 定义任务、用户、工人请求、分配结果的结构体，并提供存取的函数
 
+#### 数据存储结构定义
+
+```go
+//用户信息
+type User struct {
+	UserID      string `json:UserID`      //用户ID
+	UserAccount int    `json:UserAccount` //用户账号余额
+	UserRole    string `json:UserRole`    //用户身份
+	UserCredit  int    `json:UserCredit`  //用户信用
+}
+
+//工人报价信息
+type Offer struct {
+	ArrivalTime   string `json:ArrivalTime`   //到达时间
+	DepartureTime string `json:DepartureTime` //离开时间
+	Cost          int    `json:Cost`          //报价
+	Worker        string `json:Worker`        //工人名
+	TaskName      string `json:TaskName`      //任务名
+}
+//任务信息
+type Task struct {
+	TaskName      string `json:TaskName`      //任务名
+	Duration      int    `json:Duration`      //任务持续时间
+	StartTime     string `json:StartTime`     //任务开始时间
+	PosterID      string `json:Owner`         //任务发布者ID
+	TaskBrief     string `json:TaskBrief`     //任务简介
+	IsEnd         bool   `json:IsEnd`         //任务是否结束
+	IsPaid        bool   `json:IsPaid`        //是否给予奖励
+	ExceptedPrice int    `json:ExceptedPrice` //用户自定任务价格
+}
+//分配结果信息
+type Result struct {
+	TaskName   string `json:TaskName`   //任务名
+	AssigneeID string `json:AssigneeID` //被分配者
+	AssignCost int    `json:AssignCost` //奖励支付
+}
+```
+
 #### 链码接口
 
 ***
@@ -160,7 +198,7 @@ func (t *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 | InvokePostTask     | taskName, duration, startTime, taskBrief, exceptedPrice(string) | string, error | 发布任务         |
 | InvokePostOffer    | arrivalTime, departureTime, cost, taskName(string)           | string, error | 工人报价请求     |
 | InvokeAssignTask   | taskName(string)                                             | string, error | 任务分配         |
-| InvokeBonusPayment | taskName(string)                                             | string, error | 奖励支付         |
+| InvokeBonusPayment | taskName, isSatisfied(string)                                | string, error | 奖励支付         |
 
 ##### 链码调用（查询相关）
 
@@ -189,6 +227,35 @@ func (t *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 | QueryWorkerTaskOffer | 无               | string,error | 查询某个工人对某个任务的请求 |
 | QueryAssignResult    | taskName(string) | string,error | 查询某个任务的分配结果       |
 
+#### 测试环境部署
+
+##### 前提条件
+
+| 环境           | 版本     |
+| -------------- | -------- |
+| Docker         | 19.03.5  |
+| Docker Compose | 1.25.0   |
+| Go             | go1.13.6 |
+
+设置$GOPATH，新建以下目录；
+
+```
+mkdir -p $GOPATH/src/github.com/chainCompete/compete-service && \
+cd $GOPATH/src/github.com/chainCompete/compete-service
+```
+
+将github中Fabric目录的所有内容复制到该目录下，解压vendor.zip文件；
+
+```shell
+unzip vendor.zip
+```
+
+运行restart.sh；
+
+```shell
+./restart.sh
+```
+
 #### 链码测试（通过中间层Fabric Go SDK调用）
 
 在测试样例中，注册了三个用户，user1，user2，user3 ，user1为任务发布者，user2，user3为工人。user1发布了三个任务分别是task1，task2，task3，user2和user3分别对这三个任务发起了请求，user1在接受到请求后对任务进行了分配和奖励支付。测试程序如下：
@@ -204,52 +271,52 @@ func (t *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fSetup.InvokePostTask("task3", "30", "2020-3-20", "test3", "20")
 	fSetup.UserLogin("user2")
 	fSetup.InvokeCreateUser("worker")
-	fSetup.InvokePostOffer("2020", "2021", "30", "task1")
-	fSetup.InvokePostOffer("2020", "2021", "20", "task2")
-	fSetup.InvokePostOffer("2020", "2021", "10", "task3")
-	fSetup.UserLogin("user3")
-	fSetup.InvokeCreateUser("worker")
 	fSetup.InvokePostOffer("2020", "2021", "10", "task1")
 	fSetup.InvokePostOffer("2020", "2021", "20", "task2")
 	fSetup.InvokePostOffer("2020", "2021", "30", "task3")
+	fSetup.UserLogin("user3")
+	fSetup.InvokeCreateUser("worker")
+	fSetup.InvokePostOffer("2020", "2021", "30", "task1")
+	fSetup.InvokePostOffer("2020", "2021", "20", "task2")
+	fSetup.InvokePostOffer("2020", "2021", "10", "task3")
 	fSetup.UserLogin("user1")
 	fSetup.InvokeAssignTask("task1")
 	fSetup.InvokeAssignTask("task2")
 	fSetup.InvokeAssignTask("task3")
-	fSetup.InvokeBonusPayment("task1")
-	fSetup.InvokeBonusPayment("task2")
-	fSetup.InvokeBonusPayment("task3")
+	fSetup.InvokeBonusPayment("task1","0")
+	fSetup.InvokeBonusPayment("task2","0")
+	fSetup.InvokeBonusPayment("task3","0")
 ```
 
 链码正确执行，程序执行结果如下：
 
-![image-20200607083704425](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/2.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/2.png)
 
 对区块链中的数据进行查询，结果如下：
 
 * 查询用户信息（以user1为例）
 
-![image-20200607084355175](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/3.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/3.png)
 
 * 查询任务信息（以task1为例）
 
-![image-20200607084822395](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/4.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/4.png)
 
 * 查询系统中的所有任务
 
-![image-20200607084757513](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/5.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/5.png)
 
 * 查询个人发布的所有任务（以user1为例）
 
-![image-20200607084907263](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/6.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/6.png)
 
 * 查询个人发布的请求（以user2为例）
 
-![image-20200607085240220](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/7.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/7.png)
 
 * 查询个人对某个任务的请求（以user2为例）
 
-![image-20200607085353045](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/8.png)
+![](https://github.com/tohnee/ustc-crowdsourcing/raw/master/blockchain/Fabric/images/8.png)
 
 * 查询某个任务的分配结果（以task1，task2，task3为例）
 
